@@ -1,0 +1,35 @@
+services:
+  openmontage:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openmontage:latest
+    restart: unless-stopped
+    ports:
+      - "${OPENMONTAGE_PORT:-3003}:3003"
+    environment:
+      OPENMONTAGE_PORT: 3003
+      OPENMONTAGE_LLM_PROVIDER: ${OPENMONTAGE_LLM_PROVIDER:-ollama}
+      OPENMONTAGE_LLM_MODEL: ${OPENMONTAGE_LLM_MODEL:-qwen3-coder:30b}
+      OPENMONTAGE_LLM_BASE_URL: ${OPENMONTAGE_LLM_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3-coder:30b}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OPENMONTAGE_CACHE_DIR: /workspace/cache
+      OPENMONTAGE_API_STATE_DIR: /workspace/openmontage-api
+      OPENMONTAGE_AUTO_RENDER: ${OPENMONTAGE_AUTO_RENDER:-true}
+      OPENMONTAGE_RENDER_OUTPUT_DIR: /app/output/openmontage-api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - openmontage-workspace:/workspace
+      - openmontage-projects:/app/projects
+      - openmontage-output:/app/output
+      - openmontage-pipeline:/app/pipeline
+      - openmontage-library:/app/library
+
+volumes:
+  openmontage-workspace:
+  openmontage-projects:
+  openmontage-output:
+  openmontage-pipeline:
+  openmontage-library:
