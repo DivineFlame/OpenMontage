@@ -5,6 +5,7 @@ Loads config.yaml, merges with env overrides, and provides typed access.
 
 from __future__ import annotations
 
+import os
 from enum import Enum
 from pathlib import Path
 from typing import Optional
@@ -30,6 +31,7 @@ class LLMConfig(BaseModel):
     model: Optional[str] = None
     temperature: float = 0.7
     max_tokens: int = 4096
+    base_url: Optional[str] = None
 
 
 class BudgetConfig(BaseModel):
@@ -73,16 +75,16 @@ class OpenMontageConfig(BaseModel):
 
     @classmethod
     def load(cls, config_path: Optional[Path] = None) -> "OpenMontageConfig":
-        """Load config from YAML file. Falls back to defaults if file missing."""
+        """Load config from YAML file and environment overrides."""
         if config_path is None:
             config_path = Path(__file__).resolve().parent.parent / "config.yaml"
 
         if config_path.exists():
             with open(config_path) as f:
                 raw = yaml.safe_load(f) or {}
-            return cls.model_validate(raw)
+            return cls.model_validate(_apply_env_overrides(raw))
 
-        return cls()
+        return cls.model_validate(_apply_env_overrides({}))
 
     def resolve_path(self, key: str, project_root: Optional[Path] = None) -> Path:
         """Resolve a relative path from PathsConfig against project root."""
@@ -90,3 +92,39 @@ class OpenMontageConfig(BaseModel):
             project_root = Path(__file__).resolve().parent.parent
         value = getattr(self.paths, key)
         return (project_root / value).resolve()
+
+
+def _apply_env_overrides(raw: dict) -> dict:
+    """Apply deployment-friendly environment overrides to config data."""
+    config = dict(raw)
+    llm = dict(config.get("llm") or {})
+
+    provider = os.environ.get("OPENMONTAGE_LLM_PROVIDER") or os.environ.get("LLM_PROVIDER")
+    model = (
+        os.environ.get("OPENMONTAGE_LLM_MODEL")
+        or os.environ.get("LLM_MODEL")
+        or os.environ.get("OLLAMA_MODEL")
+    )
+    base_url = (
+        os.environ.get("OPENMONTAGE_LLM_BASE_URL")
+        or os.environ.get("LLM_BASE_URL")
+        or os.environ.get("OLLAMA_BASE_URL")
+    )
+
+    if not provider and (os.environ.get("OLLAMA_MODEL") or os.environ.get("OLLAMA_BASE_URL")):
+        provider = "ollama"
+    if provider:
+        llm["provider"] = provider
+    if model:
+        llm["model"] = model
+    if base_url:
+        llm["base_url"] = base_url
+    if "OPENMONTAGE_LLM_TEMPERATURE" in os.environ:
+        llm["temperature"] = float(os.environ["OPENMONTAGE_LLM_TEMPERATURE"])
+    if "OPENMONTAGE_LLM_MAX_TOKENS" in os.environ:
+        llm["max_tokens"] = int(os.environ["OPENMONTAGE_LLM_MAX_TOKENS"])
+
+    if llm:
+        config["llm"] = llm
+
+    return config

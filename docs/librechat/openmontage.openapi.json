@@ -1,0 +1,192 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenMontage Jobs API",
+    "version": "0.1.0",
+    "description": "Create prompt-based OpenMontage video jobs, inspect status, and fetch rendered outputs."
+  },
+  "servers": [
+    {
+      "url": "http://host.docker.internal:3003",
+      "description": "LibreChat container to OpenMontage on the Docker host"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getOpenMontageHealth",
+        "summary": "Check OpenMontage API health",
+        "responses": {
+          "200": {
+            "description": "Service status"
+          }
+        }
+      }
+    },
+    "/jobs": {
+      "get": {
+        "operationId": "listOpenMontageJobs",
+        "summary": "List OpenMontage jobs",
+        "responses": {
+          "200": {
+            "description": "Job list"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOpenMontageJob",
+        "summary": "Create and start an OpenMontage render job",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "prompt"
+                ],
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "description": "Natural-language video request."
+                  },
+                  "pipeline": {
+                    "type": "string",
+                    "description": "OpenMontage pipeline name or auto.",
+                    "default": "auto"
+                  },
+                  "render_runtime": {
+                    "type": "string",
+                    "description": "remotion, hyperframes, ffmpeg, or auto.",
+                    "default": "auto"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "LLM model requested for the job.",
+                    "default": "qwen3-coder:30b"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Optional structured metadata for the job."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created job"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/jobs/{job_id}": {
+      "get": {
+        "operationId": "getOpenMontageJob",
+        "summary": "Get OpenMontage job status",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status"
+          },
+          "404": {
+            "description": "Missing job"
+          }
+        }
+      }
+    },
+    "/jobs/{job_id}/logs": {
+      "get": {
+        "operationId": "getOpenMontageJobLogs",
+        "summary": "Get OpenMontage job logs",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job logs"
+          },
+          "404": {
+            "description": "Missing job"
+          }
+        }
+      }
+    },
+    "/jobs/{job_id}/outputs": {
+      "get": {
+        "operationId": "getOpenMontageJobOutputs",
+        "summary": "Get OpenMontage job outputs",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job outputs"
+          },
+          "404": {
+            "description": "Missing job"
+          }
+        }
+      }
+    },
+    "/jobs/{job_id}/outputs/final.mp4": {
+      "get": {
+        "operationId": "downloadOpenMontageFinalVideo",
+        "summary": "Download the rendered OpenMontage MP4",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rendered MP4 video",
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing output"
+          }
+        }
+      }
+    }
+  }
+}

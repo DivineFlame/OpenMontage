@@ -263,6 +263,29 @@ class TestConfig:
         config = OpenMontageConfig.load()
         assert config.budget.total_usd == 10.0
 
+    def test_llm_env_overrides(self, monkeypatch):
+        monkeypatch.setenv("OPENMONTAGE_LLM_PROVIDER", "ollama")
+        monkeypatch.setenv("OPENMONTAGE_LLM_MODEL", "qwen3-coder:30b")
+        monkeypatch.setenv("OPENMONTAGE_LLM_BASE_URL", "http://host.docker.internal:11434")
+
+        config = OpenMontageConfig.load()
+
+        assert config.llm.provider == "ollama"
+        assert config.llm.model == "qwen3-coder:30b"
+        assert config.llm.base_url == "http://host.docker.internal:11434"
+
+    def test_ollama_alias_env_overrides(self, monkeypatch, tmp_path):
+        config_path = tmp_path / "config.yaml"
+        config_path.write_text("llm:\n  provider: ollama\n", encoding="utf-8")
+        monkeypatch.setenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
+        monkeypatch.setenv("OLLAMA_BASE_URL", "http://ollama:11434")
+
+        config = OpenMontageConfig.load(config_path)
+
+        assert config.llm.provider == "ollama"
+        assert config.llm.model == "qwen2.5-coder:7b"
+        assert config.llm.base_url == "http://ollama:11434"
+
 
 # ---- Schemas ----
 

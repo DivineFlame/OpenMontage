@@ -3,6 +3,7 @@
 llm:
   provider: anthropic            # anthropic | openai | gemini | openrouter | ollama | mistral | minimax
   model: null                    # null = use provider default
+  base_url: null                 # e.g. http://localhost:11434 for Ollama
   temperature: 0.7
   max_tokens: 4096
 
